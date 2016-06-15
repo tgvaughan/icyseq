@@ -30,13 +30,15 @@ var seqs = {};
 var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
+var bufferWidth;
+var MAXBUFWIDTH = 32000;
 
 // Colour scheme
 var table  = {
     "G": [255,0,0,255],
     "T": [0,255,0,255],
     "C": [0,0,255,255],
-    "A": [255,255,0,255],
+    "A": [255,255,0,255]
 };
 
 // Page initialisation code
@@ -140,20 +142,26 @@ function parseSeqData() {
 
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
-    bufferCanvas.width = maxSeqLen;
+    bufferWidth = Math.min(maxSeqLen, MAXBUFWIDTH);
+
+    bufferCanvas.width = bufferWidth;
     bufferCanvas.height = nSeqs;
     bufferCtx = bufferCanvas.getContext("2d");
-    var imageData =  bufferCtx.getImageData(0,0,maxSeqLen,nSeqs);
+
+    var imageData =  bufferCtx.getImageData(0,0,bufferWidth,nSeqs);
     var data =  imageData.data;
 
     for (i=0; i<nSeqs; i++) {
         key = Object.keys(seqs)[i];
         var seq = seqs[key];
-        var offset = i*maxSeqLen*4;
-        for (var j=0; j<seq.length; j++) {
+        var offset = i*bufferWidth*4;
+
+        for (var j=0; j<bufferWidth; j++) {
+            var site = Math.floor(j*maxSeqLen/bufferWidth);
+
             var col;
-            if (seq[j] in table)
-                col = table[seq[j]];
+            if (seq[site] in table)
+                col = table[seq[site]];
             else
                 col = [0,0,0,0];
 
@@ -183,7 +191,7 @@ function update() {
     canvas.height = ch;
 
     var ctx = canvas.getContext("2d");
-    ctx.scale(canvas.width/maxSeqLen, canvas.height/nSeqs);
+    ctx.scale(canvas.width/bufferWidth, canvas.height/nSeqs);
     ctx.imageSmoothingEnabled = false;
     ctx.mozImageSmoothingEnabled = false;
     ctx.drawImage(bufferCanvas, 0, 0);
