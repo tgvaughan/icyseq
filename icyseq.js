@@ -104,6 +104,13 @@ function hideDropTarget() {
     target.removeClass();
 }
 
+function toggleHelp() {
+    if ($("#help").css("display") == "none")
+        $("#help").css("display", "block");
+    else
+        $("#help").css("display", "none");
+}
+
 function getSeqFromY(y, maxY) {
     return Object.keys(seqs)[Math.floor(nSeqs*y/maxY)];
 }
@@ -333,6 +340,10 @@ function keyPressHandler(event) {
         case "L":
             openFileLoadDialog();
             event.preventDefault();
+            return;
+
+        case "?":
+            toggleHelp();
             return;
     }
 

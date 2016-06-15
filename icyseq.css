@@ -21,7 +21,7 @@ body {
     width: calc(100% - 50px);
     height: calc(100% - 50px);
 
-    z-index: 10;
+    z-index: 2;
 }
 
 #title {
@@ -56,6 +56,30 @@ body {
 
 #cursorCoords .entry {
     font-weight: bold;
+}
+
+#help {
+    display: none;
+    position: absolute;
+
+    z-index: 3;
+    background-color: rgba(1,1,1,0.9);
+
+    width: 100%;
+    height: 100%;
+    color: white;
+    font-family: sans-serif;
+    font-size: 2em;
+}
+
+#help > table {
+    position: relative;
+    top: 30%;
+    transform: translateY(-50%);
+    left: 50%;
+    transform: translateX(-50%);
+
+    text-align: left;
 }
 
 #fileInput {
