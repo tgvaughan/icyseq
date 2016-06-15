@@ -30,7 +30,7 @@ var seqs = {};
 var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
-var bufferWidth;
+var bufferWidttrueh;
 var MAXBUFWIDTH = 32000;
 var coords = false;
 
@@ -171,15 +171,65 @@ function loadFile() {
     function fileLoaded(evt) {
         seqData = evt.target.result;
         parseSeqData();
+        drawAlignmentImage();
+        hideDropTarget();
+        update();
+    }
+}
+
+function parseSeqData() {
+    // Clear existing sequences
+    seqs = {};
+
+    if (seqData.trim().toLowerCase().startsWith("#nexus"))
+        parseNEXUS();
+
+    else if (seqData.trim().startsWith(">"))
+        parseFASTA();
+
+    else {
+        // Todo: produce error.
+        console.log("Error reading file.");
+    }
+}
+
+function parseNEXUS() {
+    var lines = seqData.replace(/\[[^\]]*\]/g,"").replace(/\r/g,'\n').split('\n');
+
+    var indata = false;
+    var data;
+    for (var i=0; i<lines.length; i++) {
+        thisline = lines[i].trim();
+
+        if (!indata) {
+            if (thisline.toLowerCase().startsWith("matrix")) {
+                thisline = thisline.substr(7);
+                data = "";
+                indata = true;
+            } else
+                continue;
+            
+            if (thisline.indexOf(";") != -1)
+                break;
+        }
+
+        data += " " + thisline;
+        if (thisline.indexOf(";") != -1)
+            break;
+    }
+
+    data = data.split(";")[0].replace(/\s+/g, " ").trim().split(" ");
+
+    for (i=0; i<data.length; i+=2) {
+        if (data[i] in seqs)
+            seqs[data[i]] += data[i+1];
+        else
+            seqs[data[i]] = data[i+1];
     }
 }
 
 // Parse fasta-formatted alignment file
-function parseSeqData() {
-
-    // Clear existing sequences
-    seqs = {};
-
+function parseFASTA() {
     var lines = seqData.split('\n');
 
     var first = true;
@@ -203,7 +253,9 @@ function parseSeqData() {
     }
 
     seqs[thishead] = thisseq;
+}
 
+function drawAlignmentImage() {
     // Record sequence count and maximum length
     nSeqs = Object.keys(seqs).length;
     maxSeqLen = 0;
@@ -242,10 +294,6 @@ function parseSeqData() {
         }
     }
     bufferCtx.putImageData(imageData, 0, 0);
-
-    hideDropTarget();
-
-    update();
 }
 
 // Update canvas
