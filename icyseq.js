@@ -45,15 +45,15 @@ $(document).ready(function() {
     $(window).on("resize", update);
 
     // Set up drag and drop event listeners
-    $("#output").on("dragover", function(event) {
+    $(window).on("dragover", function(event) {
         event.preventDefault();
         return false;
     });
-    $("#output").on("dragend", function(event) {
+    $(window).on("dragend", function(event) {
         event.preventDefault();
         return false;
     });
-    $("#output").on("drop", function (event) {
+    $(window).on("drop", function (event) {
         event.preventDefault();
         seqFile = event.originalEvent.dataTransfer.files[0];
         loadFile();
@@ -67,7 +67,20 @@ $(document).ready(function() {
 
     // Set up keyboard handler:
     $(window).on("keypress", keyPressHandler);
+
+    displayDropTarget();
 });
+
+function displayDropTarget() {
+    var target = $("#dropTarget");
+    target.removeClass();
+    target.addClass("start");
+}
+
+function hideDropTarget() {
+    var target = $("#dropTarget");
+    target.removeClass();
+}
 
 function openFileLoadDialog() {
     // Clear file input (otherwise can't reload same file)
@@ -133,7 +146,7 @@ function parseSeqData() {
     var imageData =  bufferCtx.getImageData(0,0,maxSeqLen,nSeqs);
     var data =  imageData.data;
 
-    for (var i=0; i<nSeqs; i++) {
+    for (i=0; i<nSeqs; i++) {
         key = Object.keys(seqs)[i];
         var seq = seqs[key];
         var offset = i*maxSeqLen*4;
@@ -150,6 +163,8 @@ function parseSeqData() {
         }
     }
     bufferCtx.putImageData(imageData, 0, 0);
+
+    hideDropTarget();
 
     update();
 }
