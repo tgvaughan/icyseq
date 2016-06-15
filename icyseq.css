@@ -64,22 +64,49 @@ body {
 
     z-index: 3;
     background-color: rgba(1,1,1,0.9);
+    padding: 0px;
+    margin: 0px;
 
     width: 100%;
     height: 100%;
-    color: white;
     font-family: sans-serif;
+    color: white;
     font-size: 2em;
 }
 
 #help > table {
     position: relative;
-    top: 30%;
-    transform: translateY(-50%);
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateY(-50%) translateX(-50%);
 
     text-align: left;
+}
+
+table th {
+    color: yellow;
+}
+
+#help > p {
+    position: relative;
+    border-style: solid;
+    border-width: 1px 0px 1px 0px;
+    padding: 10px;
+
+    width: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-50%);
+    font-size: 15pt;
+}
+
+#help a {
+    color: cyan;
+    text-decoration: none;
+}
+
+#help a:hover {
+    text-decoration: underline;
 }
 
 #fileInput {
