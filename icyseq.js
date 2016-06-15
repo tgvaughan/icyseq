@@ -105,7 +105,7 @@ function parseSeqData() {
             if (first) {
                 first = false;
             } else {
-                seqs[thishead] = thisseq.trim();
+                seqs[thishead] = thisseq.trim().toUpperCase();
             }
 
             thishead = thisline.substr(1).trim();
