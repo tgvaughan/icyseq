@@ -25,10 +25,6 @@ body {
 }
 
 #title {
-    color: yellow;
-    font-family: sans-serif;
-    font-size: 3em;
-    font-weight: bold;
     position: relative;
     top: 50%;
     transform: translateY(-50%);
@@ -45,13 +41,27 @@ body {
     border: 0px;
 }
 
+#buffer {
+    display: none;
+}
+
+#cursorCoords {
+    display: none;
+    position: absolute;
+
+    color: white;
+    background-color: rgba(1,1,1,0.5);
+    font-family: sans-serif;
+}
+
+#cursorCoords .entry {
+    font-weight: bold;
+}
+
 #fileInput {
     /* display: none; (Causes problems in Safari.) */
     position: absolute;
     left: -9999px;  /* So ugly! */
 }
 
-#buffer {
-    display: none;
-}
 

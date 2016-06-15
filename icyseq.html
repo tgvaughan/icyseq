@@ -24,16 +24,31 @@
             An HTML5-capable browser is required to run IcySeq.
         </canvas>
 
+        <!-- Separarte buffer canvas used to blt sequence data to screen. -->
+        <canvas id="buffer"></canvas>
+
+        <!-- Drag and drop target displayed when page first loaded. -->
         <div id="dropTarget">
             <div id="title">
                 <img src="icyseq.svg">
             </div>
         </div>
 
-        <canvas id="buffer">
-        </canvas>
-
         <!-- File input element -->
         <input id="fileInput" type="file"/>
+
+        <!-- Mouse cursor coordinate window -->
+        <div id="cursorCoords">
+            <table>
+                <tr>
+                    <td>Site</td>
+                    <td class="entry" id="site"></td>
+                </tr>
+                <tr>
+                    <td>Seq</td>
+                    <td class="entry" id="seq"></td>
+                </tr>
+            </table>
+        </div>
     </body>
 </html>

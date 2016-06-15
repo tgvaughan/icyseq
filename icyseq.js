@@ -25,15 +25,18 @@
 
 // Global variables
 var seqFile;
-var seqData;
+var seqData = "";
 var seqs = {};
 var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
 var bufferWidth;
 var MAXBUFWIDTH = 32000;
+var coords = false;
 
-// Colour scheme
+var mousex, mousey;
+
+// Colour schemes
 var table  = {
     "G": [255,0,0,255],
     "T": [0,255,0,255],
@@ -71,6 +74,23 @@ $(document).ready(function() {
     $(window).on("keypress", keyPressHandler);
 
     displayDropTarget();
+
+    // Event handlers to ensure coords never displayed when mouse has left window
+    $(window).on("mouseleave", function(event) {
+        if (coords)
+            $("#cursorCoords").css("display", "none");
+    });
+    $(window).on("mouseenter", function(event) {
+        if (coords)
+            $("#cursorCoords").css("display", "block");
+    });
+
+    // Keep mouse coords on hand:
+    $(window).on("mousemove", function(event) {
+        var oe = event.originalEvent;
+        mousex = oe.clientX;
+        mousey = oe.clientY;
+    });
 });
 
 function displayDropTarget() {
@@ -82,6 +102,57 @@ function displayDropTarget() {
 function hideDropTarget() {
     var target = $("#dropTarget");
     target.removeClass();
+}
+
+function getSeqFromY(y, maxY) {
+    return Object.keys(seqs)[Math.floor(nSeqs*y/maxY)];
+}
+
+function getSiteFromX(x, maxX) {
+    return Math.floor(maxSeqLen*x/maxX) + " / " + maxSeqLen;
+}
+
+function drawCoords(x, y) {
+    var maxX = $("#output").width();
+    var maxY = $("#output").height();
+    var offset = 10;
+
+    if (x/maxX>0.5)
+        $("#cursorCoords").css("left", x - offset - $("#cursorCoords").width());
+    else
+        $("#cursorCoords").css("left", x + offset);
+
+    if (y/maxY>0.5)
+        $("#cursorCoords").css("top", y - offset - $("#cursorCoords").height());
+    else
+        $("#cursorCoords").css("top", y + offset);
+
+    var seq = getSeqFromY(y, $("#output").height());
+    $("#seq").text(seq);
+
+    var site = getSiteFromX(x, $("#output").width());
+    $("#site").text(site);
+}
+
+function coordsHandler(event) {
+    var oe = event.originalEvent;
+    drawCoords(oe.clientX, oe.clientY);
+}
+
+function toggleCoords() {
+    coords = !coords;
+
+    if (coords) {
+        // Ensure coords positioned according to current
+        // mouse position
+        drawCoords(mousex, mousey);
+
+        $("#cursorCoords").css("display", "block");
+        $(window).on("mousemove", coordsHandler);
+    } else {
+        $("#cursorCoords").css("display", "none");
+        $(window).off("mousemove", coordsHandler);
+    }
 }
 
 function openFileLoadDialog() {
@@ -207,6 +278,8 @@ function keyPressHandler(event) {
         return;
 
     var eventChar = String.fromCharCode(event.charCode);
+
+    // Commands which are always active:
     switch (eventChar) {
         case "l":
         case "L":
@@ -214,4 +287,14 @@ function keyPressHandler(event) {
             event.preventDefault();
             return;
     }
+
+    if (seqData.length == 0)
+        return;
+
+    // Commands which work only when sequences loaded:
+    switch (eventChar) {
+        case "c":
+            toggleCoords();
+    }
+
 }
