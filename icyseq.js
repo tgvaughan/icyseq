@@ -37,10 +37,6 @@ var table  = {
     "T": [0,255,0,255],
     "C": [0,0,255,255],
     "A": [255,255,0,255],
-
-    "N":  [0,0,0,0],
-    "-":  [0,0,0,0],
-    "?":  [0,0,0,0]
 };
 
 // Page initialisation code
@@ -142,8 +138,14 @@ function parseSeqData() {
         var seq = seqs[key];
         var offset = i*maxSeqLen*4;
         for (var j=0; j<seq.length; j++) {
+            var col;
+            if (seq[j] in table)
+                col = table[seq[j]];
+            else
+                col = [0,0,0,0];
+
             for (var k=0; k<4; k++) {
-                data[offset + 4*j + k] = table[seq[j]][k]
+                data[offset + 4*j + k] = col[k];
             }
         }
     }
