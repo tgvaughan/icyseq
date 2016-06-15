@@ -201,6 +201,7 @@ function keyPressHandler(event) {
     var eventChar = String.fromCharCode(event.charCode);
     switch (eventChar) {
         case "l":
+        case "L":
             openFileLoadDialog();
             event.preventDefault();
             return;
