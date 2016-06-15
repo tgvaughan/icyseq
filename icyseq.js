@@ -27,6 +27,21 @@
 var seqFile;
 var seqData;
 var seqs = {};
+var nSeqs;
+var maxSeqLen;
+var bufferCanvas;
+
+// Colour scheme
+var table  = {
+    "G": [255,0,0,255],
+    "T": [0,255,0,255],
+    "C": [0,0,255,255],
+    "A": [255,255,0,255],
+
+    "N":  [0,0,0,0],
+    "-":  [0,0,0,0],
+    "?":  [0,0,0,0]
+};
 
 // Page initialisation code
 $(document).ready(function() {
@@ -56,8 +71,6 @@ $(document).ready(function() {
 
     // Set up keyboard handler:
     $(window).on("keypress", keyPressHandler);
-
-
 });
 
 function openFileLoadDialog() {
@@ -109,49 +122,54 @@ function parseSeqData() {
 
     seqs[thishead] = thisseq;
 
+    // Record sequence count and maximum length
+    nSeqs = Object.keys(seqs).length;
+    maxSeqLen = 0;
+    for (var key in seqs) {
+        maxSeqLen = Math.max(maxSeqLen, seqs[key].length);
+    }
+
+    // Paint alignment to off-screen canvas
+    var bufferCanvas = document.getElementById("buffer");
+    bufferCanvas.width = maxSeqLen;
+    bufferCanvas.height = nSeqs;
+    bufferCtx = bufferCanvas.getContext("2d");
+    var imageData =  bufferCtx.getImageData(0,0,maxSeqLen,nSeqs);
+    var data =  imageData.data;
+
+    for (var i=0; i<nSeqs; i++) {
+        key = Object.keys(seqs)[i];
+        var seq = seqs[key];
+        var offset = i*maxSeqLen*4;
+        for (var j=0; j<seq.length; j++) {
+            for (var k=0; k<4; k++) {
+                data[offset + 4*j + k] = table[seq[j]][k]
+            }
+        }
+    }
+    bufferCtx.putImageData(imageData, 0, 0);
+
     update();
 }
 
 // Update canvas
 function update() {
 
-    var table  = {
-        "G": "#FF0000",
-        "T": "#00FF00",
-        "C": "#0000FF",
-        "A": "#FFFF00",
-        "-": "#000000",
-        "?": "#000000"
-    };
-
     // Convert sequences to pixels
 
-    var nSeqs = Object.keys(seqs).length;
-    var maxSeqLen = 0;
-    for (var key in seqs) {
-        maxSeqLen = Math.max(maxSeqLen, seqs[key].length);
-    }
-
     var canvas = document.getElementById("output");
-    var ctx = canvas.getContext("2d");
+    var bufferCanvas = document.getElementById("buffer");
 
     cw = canvas.clientWidth;
     ch = canvas.clientHeight;
     canvas.width = cw;
     canvas.height = ch;
 
+    var ctx = canvas.getContext("2d");
     ctx.scale(canvas.width/maxSeqLen, canvas.height/nSeqs);
-
-    for (var i=0; i<nSeqs; i++) {
-        key = Object.keys(seqs)[i];
-        var seq = seqs[key];
-        for (var j=0; j<seq.length; j++) {
-            for (var k=0; k<4; k++) {
-                ctx.fillStyle = table[seq[j]];
-                ctx.fillRect(j,i,1,1);
-            }
-        }
-    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.drawImage(bufferCanvas, 0, 0);
 }
 
 // Keyboard event handler

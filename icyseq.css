@@ -19,3 +19,6 @@
     left: -9999px;  /* So ugly! */
 }
 
+#buffer {
+    display: none;
+}
