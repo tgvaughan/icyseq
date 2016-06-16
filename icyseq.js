@@ -36,12 +36,32 @@ var coords = false;
 
 var mousex, mousey;
 
+var tmp;
+
 // Colour schemes
-var table  = {
-    "G": [255,0,0,255],
-    "T": [0,255,0,255],
-    "C": [0,0,255,255],
-    "A": [255,255,0,255]
+var csIdx = 0;
+var colourSchemes = {
+    "rainbow": {
+        "G": [255,0,0,255],
+        "T": [0,255,0,255],
+        "C": [0,0,255,255],
+        "A": [255,255,0,255],
+        "U": [255,255,0,255]
+    },
+    "ice": {
+        "G": [0,0,255,255],
+        "T": [100,100,255,255],
+        "C": [200,200,255,255],
+        "A": [255,255,255,255],
+        "U": [255,255,255,255]
+    },
+    "fire": {
+        "G": [255,0,0,255],
+        "T": [255,100,0,255],
+        "C": [255,255,0,255],
+        "A": [255,255,255,255],
+        "U": [255,255,255,255]
+    }
 };
 
 // Page initialisation code
@@ -162,6 +182,13 @@ function toggleCoords() {
     }
 }
 
+function cycleColourScheme() {
+    csIdx = (csIdx+1) % Object.keys(colourSchemes).length;
+
+    drawAlignmentImage();
+    update();
+}
+
 function openFileLoadDialog() {
     // Clear file input (otherwise can't reload same file)
     $("#fileInput").replaceWith($("#fileInput").clone(true));
@@ -227,14 +254,18 @@ function parseNEXUS() {
 
     data = data.split(";")[0];
 
+
     var re1 = /'[^']*'/g;
     var re2 = /"[^"]*"/g;
     while (((match = re1.exec(data)) !== null) || ((match = re2.exec(data)) !== null)) {
         var str = match[0].replace(/\s+/g,"_");
         str = str.substr(1,str.length-2);
-        data = data.slice(0, match.index-1) + str + data.slice(match.index+match[0].length, data.length);
+        data = data.slice(0, match.index) + str + data.slice(match.index+match[0].length, data.length);
     }
+
     data = data.replace(/\s+/g, " ").trim().split(" ");
+
+    tmp = data;
 
     for (i=0; i<data.length; i+=2) {
         if (data[i] in seqs)
@@ -290,6 +321,8 @@ function drawAlignmentImage() {
     var imageData =  bufferCtx.getImageData(0,0,bufferWidth,nSeqs);
     var data =  imageData.data;
 
+    var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
+
     for (i=0; i<nSeqs; i++) {
         key = Object.keys(seqs)[i];
         var seq = seqs[key];
@@ -299,8 +332,8 @@ function drawAlignmentImage() {
             var site = Math.floor(j*maxSeqLen/bufferWidth);
 
             var col;
-            if (seq[site] in table)
-                col = table[seq[site]];
+            if (seq[site] in colourScheme)
+                col = colourScheme[seq[site]];
             else
                 col = [0,0,0,0];
 
@@ -356,13 +389,17 @@ function keyPressHandler(event) {
             return;
     }
 
-    if (seqData.length == 0)
+    if (seqData.length === 0)
         return;
 
     // Commands which work only when sequences loaded:
     switch (eventChar) {
         case "c":
             toggleCoords();
+            return;
+        case "s":
+            cycleColourScheme();
+            return;
     }
 
 }
