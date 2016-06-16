@@ -33,10 +33,10 @@ var bufferCanvas;
 var bufferWidttrueh;
 var MAXBUFWIDTH = 32000;
 var coords = false;
+var snpView = false;
+var baseSeqIdx = 0;
 
 var mousex, mousey;
-
-var tmp;
 
 // Colour schemes
 var csIdx = 0;
@@ -46,21 +46,26 @@ var colourSchemes = {
         "T": [0,255,0,255],
         "C": [0,0,255,255],
         "A": [255,255,0,255],
-        "U": [255,255,0,255]
+        "U": [255,255,0,255],
+        "snp": [255, 0, 0, 255]
     },
+
     "ice": {
         "G": [0,0,255,255],
         "T": [100,100,255,255],
         "C": [200,200,255,255],
         "A": [255,255,255,255],
-        "U": [255,255,255,255]
+        "U": [255,255,255,255],
+        "snp": [0, 255, 0, 255]
     },
+
     "fire": {
         "G": [255,0,0,255],
         "T": [255,100,0,255],
         "C": [255,255,0,255],
         "A": [255,255,255,255],
-        "U": [255,255,255,255]
+        "U": [255,255,255,255],
+        "snp": [0, 255, 255, 255]
     }
 };
 
@@ -93,6 +98,8 @@ $(document).ready(function() {
     // Set up keyboard handler:
     $(window).on("keypress", keyPressHandler);
 
+    // Set up mouse click handler:
+    $("#output").click(mouseClickHandler);
     displayDropTarget();
 
     // Event handlers to ensure coords never displayed when mouse has left window
@@ -111,6 +118,7 @@ $(document).ready(function() {
         mousex = oe.clientX;
         mousey = oe.clientY;
     });
+
 });
 
 function displayDropTarget() {
@@ -184,6 +192,13 @@ function toggleCoords() {
 
 function cycleColourScheme() {
     csIdx = (csIdx+1) % Object.keys(colourSchemes).length;
+
+    drawAlignmentImage();
+    update();
+}
+
+function toggleSNPView() {
+    snpView = !snpView;
 
     drawAlignmentImage();
     update();
@@ -265,13 +280,11 @@ function parseNEXUS() {
 
     data = data.replace(/\s+/g, " ").trim().split(" ");
 
-    tmp = data;
-
     for (i=0; i<data.length; i+=2) {
         if (data[i] in seqs)
-            seqs[data[i]] += data[i+1];
+            seqs[data[i]] += data[i+1].trim().toUpperCase();
         else
-            seqs[data[i]] = data[i+1];
+            seqs[data[i]] = data[i+1].trim().toUpperCase();
     }
 }
 
@@ -299,7 +312,7 @@ function parseFASTA() {
         thisseq += thisline;
     }
 
-    seqs[thishead] = thisseq;
+    seqs[thishead] = thisseq.trim().toUpperCase();
 }
 
 function drawAlignmentImage() {
@@ -323,22 +336,48 @@ function drawAlignmentImage() {
 
     var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
 
-    for (i=0; i<nSeqs; i++) {
-        key = Object.keys(seqs)[i];
-        var seq = seqs[key];
-        var offset = i*bufferWidth*4;
+    if (!snpView) {
+        for (i=0; i<nSeqs; i++) {
+            key = Object.keys(seqs)[i];
+            var seq = seqs[key];
+            var offset = i*bufferWidth*4;
 
-        for (var j=0; j<bufferWidth; j++) {
-            var site = Math.floor(j*maxSeqLen/bufferWidth);
+            for (var j=0; j<bufferWidth; j++) {
+                var site = Math.floor(j*maxSeqLen/bufferWidth);
 
-            var col;
-            if (seq[site] in colourScheme)
-                col = colourScheme[seq[site]];
-            else
-                col = [0,0,0,0];
+                var col;
+                if (seq[site] in colourScheme)
+                    col = colourScheme[seq[site]];
+                else
+                    col = [0,0,0,0];
 
-            for (var k=0; k<4; k++) {
-                data[offset + 4*j + k] = col[k];
+                for (var k=0; k<4; k++) {
+                    data[offset + 4*j + k] = col[k];
+                }
+            }
+        }
+    } else {
+        console.log(baseSeqIdx);
+        baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
+        var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
+
+        for (i=0; i<nSeqs; i++) {
+            key = Object.keys(seqs)[i];
+            var seq = seqs[key];
+            var offset = i*bufferWidth*4;
+
+            for (var j=0; j<bufferWidth; j++) {
+                var site = Math.floor(j*maxSeqLen/bufferWidth);
+
+                var col;
+                if (seq[site] !== baseSeq[site])
+                    col = colourScheme["snp"];
+                else
+                    col = [0,0,0,0];
+
+                for (var k=0; k<4; k++) {
+                    data[offset + 4*j + k] = col[k];
+                }
             }
         }
     }
@@ -394,12 +433,31 @@ function keyPressHandler(event) {
 
     // Commands which work only when sequences loaded:
     switch (eventChar) {
-        case "c":
+        case "x":
             toggleCoords();
             return;
-        case "s":
+        case "c":
             cycleColourScheme();
+            return;
+        case "s":
+            toggleSNPView();
             return;
     }
 
+}
+
+// Mouse click event handler
+function mouseClickHandler(event) {
+
+    if (seqData.length === 0)
+        return;
+
+    // Set base sequence for SNP view:
+    var oe = event.originalEvent;
+    baseSeqIdx = Math.floor(nSeqs*oe.clientY/$(window).height());
+
+    drawAlignmentImage();
+    update();
+
+    event.preventDefault();
 }
