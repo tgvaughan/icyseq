@@ -48,14 +48,21 @@ body {
 #cursorCoords {
     display: none;
     position: absolute;
+    max-width: 45%;
 
     color: white;
     background-color: rgba(1,1,1,0.5);
     font-family: sans-serif;
 }
 
+#cursorCoords tr {
+    vertical-align: top;
+}
+
 #cursorCoords .entry {
     font-weight: bold;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 #help {

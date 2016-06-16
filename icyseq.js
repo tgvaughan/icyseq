@@ -409,8 +409,12 @@ function update() {
 
     var ctx = canvas.getContext("2d");
     ctx.scale(canvas.width/bufferWidth, canvas.height/nSeqs);
+
     ctx.imageSmoothingEnabled = false;
     ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+
     ctx.drawImage(bufferCanvas, 0, 0);
 }
 
