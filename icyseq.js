@@ -242,6 +242,7 @@ function parseSeqData() {
     }
 }
 
+// Parse NEXUS-formatted alignment file
 function parseNEXUS() {
     var lines = seqData.replace(/\[[^\]]*\]/g,"").replace(/\r/g,'\n').split('\n');
 
@@ -315,7 +316,11 @@ function parseFASTA() {
     seqs[thishead] = thisseq.trim().toUpperCase();
 }
 
+// Convert parsed sequences into a nSeqs*maxSeqLen bitmap representing the
+// alignment.  This function doesn't actually draw this to the  screen
+// - that is handled by update().
 function drawAlignmentImage() {
+
     // Record sequence count and maximum length
     nSeqs = Object.keys(seqs).length;
     maxSeqLen = 0;
@@ -336,46 +341,51 @@ function drawAlignmentImage() {
 
     var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
 
+    var i, j, k, seq, offset, site, col;
     if (!snpView) {
         for (i=0; i<nSeqs; i++) {
             key = Object.keys(seqs)[i];
-            var seq = seqs[key];
-            var offset = i*bufferWidth*4;
+            seq = seqs[key];
+            offset = i*bufferWidth*4;
 
-            for (var j=0; j<bufferWidth; j++) {
-                var site = Math.floor(j*maxSeqLen/bufferWidth);
+            for (j=0; j<bufferWidth; j++) {
+                site = Math.floor(j*maxSeqLen/bufferWidth);
 
-                var col;
-                if (seq[site] in colourScheme)
+                if (site<seq.length && seq[site] in colourScheme)
                     col = colourScheme[seq[site]];
                 else
                     col = [0,0,0,0];
 
-                for (var k=0; k<4; k++) {
+                for (k=0; k<4; k++) {
                     data[offset + 4*j + k] = col[k];
                 }
             }
         }
     } else {
-        console.log(baseSeqIdx);
         baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
         var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
 
         for (i=0; i<nSeqs; i++) {
             key = Object.keys(seqs)[i];
-            var seq = seqs[key];
-            var offset = i*bufferWidth*4;
+            seq = seqs[key];
+            offset = i*bufferWidth*4;
 
-            for (var j=0; j<bufferWidth; j++) {
-                var site = Math.floor(j*maxSeqLen/bufferWidth);
+            for (j=0; j<bufferWidth; j++) {
+                var startSite = Math.floor(j*maxSeqLen/bufferWidth);
+                var endSite = Math.min(Math.floor((j+1)*maxSeqLen/bufferWidth), maxSeqLen);
 
-                var col;
-                if (seq[site] !== baseSeq[site])
-                    col = colourScheme["snp"];
+                var isSNP = false;
+                for (site=startSite; site<endSite; site++) {
+                    if (seq[site] !== baseSeq[site])
+                        isSNP = true;
+                }
+
+                if (isSNP)
+                    col = colourScheme.snp;
                 else
                     col = [0,0,0,0];
 
-                for (var k=0; k<4; k++) {
+                for (k=0; k<4; k++) {
                     data[offset + 4*j + k] = col[k];
                 }
             }
