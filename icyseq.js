@@ -225,7 +225,16 @@ function parseNEXUS() {
             break;
     }
 
-    data = data.split(";")[0].replace(/\s+/g, " ").trim().split(" ");
+    data = data.split(";")[0];
+
+    var re1 = /'[^']*'/g;
+    var re2 = /"[^"]*"/g;
+    while (((match = re1.exec(data)) !== null) || ((match = re2.exec(data)) !== null)) {
+        var str = match[0].replace(/\s+/g,"_");
+        str = str.substr(1,str.length-2);
+        data = data.slice(0, match.index-1) + str + data.slice(match.index+match[0].length, data.length);
+    }
+    data = data.replace(/\s+/g, " ").trim().split(" ");
 
     for (i=0; i<data.length; i+=2) {
         if (data[i] in seqs)
