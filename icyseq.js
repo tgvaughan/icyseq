@@ -143,6 +143,7 @@ function toggleHelp() {
 }
 
 function displayNotification(str) {
+    $("#notify").stop(true, true);
     $("#notify div").text(str);
     $("#notify").show();
     $("#notify").fadeOut(1000);
