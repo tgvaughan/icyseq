@@ -72,7 +72,10 @@ var colourSchemes = {
 // Page initialisation code
 $(document).ready(function() {
 
-    $(window).on("resize", update);
+    $(window).on("resize", function() {
+        if (seqData.length !== 0)
+            update();
+    });
 
     // Set up drag and drop event listeners
     $(window).on("dragover", function(event) {
