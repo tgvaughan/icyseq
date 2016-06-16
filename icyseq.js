@@ -137,17 +137,24 @@ function hideDropTarget() {
 
 function toggleHelp() {
     if ($("#help").css("display") == "none")
-        $("#help").css("display", "block");
+        $("#help").fadeIn();
     else
-        $("#help").css("display", "none");
+        $("#help").fadeOut();
+}
+
+function displayNotification(str) {
+    $("#notify div").text(str);
+    $("#notify").show();
+    $("#notify").fadeOut(1000);
 }
 
 function getSeqFromY(y, maxY) {
-    return Object.keys(seqs)[Math.floor(nSeqs*y/maxY)];
+    seqIdx = Math.floor(nSeqs*y/maxY);
+    return (seqIdx+1) + " of " + nSeqs + " (" + Object.keys(seqs)[seqIdx] + ")";
 }
 
 function getSiteFromX(x, maxX) {
-    return Math.floor(maxSeqLen*x/maxX) + " / " + maxSeqLen;
+    return Math.floor(maxSeqLen*x/maxX) + " of " + maxSeqLen;
 }
 
 function drawCoords(x, y) {
@@ -185,16 +192,17 @@ function toggleCoords() {
         // mouse position
         drawCoords(mousex, mousey);
 
-        $("#cursorCoords").css("display", "block");
+        $("#cursorCoords").show();
         $(window).on("mousemove", coordsHandler);
     } else {
-        $("#cursorCoords").css("display", "none");
+        $("#cursorCoords").fadeOut();
         $(window).off("mousemove", coordsHandler);
     }
 }
 
 function cycleColourScheme() {
     csIdx = (csIdx+1) % Object.keys(colourSchemes).length;
+    displayNotification(Object.keys(colourSchemes)[csIdx]);
 
     drawAlignmentImage();
     update();
