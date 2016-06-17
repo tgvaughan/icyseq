@@ -31,7 +31,6 @@ var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
 var bufferWidttrueh;
-var MAXBUFWIDTH = 32000;
 var coords = false;
 var snpView = false;
 var baseSeqIdx = 0;
@@ -205,14 +204,12 @@ function cycleColourScheme() {
     csIdx = (csIdx+1) % Object.keys(colourSchemes).length;
     displayNotification(Object.keys(colourSchemes)[csIdx]);
 
-    drawAlignmentImage();
     update();
 }
 
 function toggleSNPView() {
     snpView = !snpView;
 
-    drawAlignmentImage();
     update();
 }
 
@@ -232,7 +229,6 @@ function loadFile() {
     function fileLoaded(evt) {
         seqData = evt.target.result;
         parseSeqData();
-        drawAlignmentImage();
         hideDropTarget();
         update();
     }
@@ -342,7 +338,7 @@ function drawAlignmentImage() {
 
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
-    bufferWidth = Math.min(maxSeqLen, MAXBUFWIDTH);
+    bufferWidth = Math.min(maxSeqLen, $(window).width());
 
     bufferCanvas.width = bufferWidth;
     bufferCanvas.height = nSeqs;
@@ -408,6 +404,9 @@ function drawAlignmentImage() {
 
 // Update canvas
 function update() {
+
+    // Draw alignment image off-screen
+    drawAlignmentImage();
 
     // Convert sequences to pixels
 
@@ -482,7 +481,6 @@ function mouseClickHandler(event) {
     var oe = event.originalEvent;
     baseSeqIdx = Math.floor(nSeqs*oe.clientY/$(window).height());
 
-    drawAlignmentImage();
     update();
 
     event.preventDefault();
