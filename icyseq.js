@@ -384,7 +384,8 @@ function drawAlignmentImage() {
 
                 var isSNP = false;
                 for (site=startSite; site<endSite; site++) {
-                    if (seq[site] !== baseSeq[site])
+                    if ((seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
+                            seq[site] !== baseSeq[site])
                         isSNP = true;
                 }
 
