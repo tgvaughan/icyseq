@@ -77,15 +77,15 @@ $(document).ready(function() {
     });
 
     // Set up drag and drop event listeners
-    $(window).on("dragover", function(event) {
+    $("#dropTarget,#output").on("dragover", function(event) {
         event.preventDefault();
         return false;
     });
-    $(window).on("dragend", function(event) {
+    $("#dropTarget,#output").on("dragend", function(event) {
         event.preventDefault();
         return false;
     });
-    $(window).on("drop", function (event) {
+    $("#dropTarget,#output").on("drop", function (event) {
         event.preventDefault();
         seqFile = event.originalEvent.dataTransfer.files[0];
         loadFile();
@@ -105,22 +105,21 @@ $(document).ready(function() {
     displayDropTarget();
 
     // Event handlers to ensure coords never displayed when mouse has left window
-    $(window).on("mouseleave", function(event) {
+    $("#output").on("mouseleave", function(event) {
         if (coords)
             $("#cursorCoords").css("display", "none");
     });
-    $(window).on("mouseenter", function(event) {
+    $("#output").on("mouseenter", function(event) {
         if (coords)
             $("#cursorCoords").css("display", "block");
     });
 
     // Keep mouse coords on hand:
-    $(window).on("mousemove", function(event) {
+    $("#output").on("mousemove", function(event) {
         var oe = event.originalEvent;
-        mousex = oe.clientX;
-        mousey = oe.clientY;
+        mousex = oe.layerX;
+        mousey = oe.layerY;
     });
-
 });
 
 function displayDropTarget() {
@@ -154,7 +153,7 @@ function getSeqFromY(y, maxY) {
 }
 
 function getSiteFromX(x, maxX) {
-    return Math.floor(maxSeqLen*x/maxX) + " of " + maxSeqLen;
+    return (Math.floor(maxSeqLen*x/maxX)+1) + " of " + maxSeqLen;
 }
 
 function drawCoords(x, y) {
@@ -181,7 +180,7 @@ function drawCoords(x, y) {
 
 function coordsHandler(event) {
     var oe = event.originalEvent;
-    drawCoords(oe.clientX, oe.clientY);
+    drawCoords(oe.layerX, oe.layerY);
 }
 
 function toggleCoords() {
@@ -193,10 +192,10 @@ function toggleCoords() {
         drawCoords(mousex, mousey);
 
         $("#cursorCoords").show();
-        $(window).on("mousemove", coordsHandler);
+        $("#output").on("mousemove", coordsHandler);
     } else {
         $("#cursorCoords").fadeOut();
-        $(window).off("mousemove", coordsHandler);
+        $("#output").off("mousemove", coordsHandler);
     }
 }
 
@@ -411,8 +410,10 @@ function update() {
 
     // Convert sequences to pixels
 
-    var canvas = document.getElementById("output");
-    var bufferCanvas = document.getElementById("buffer");
+    var canvas = $("#output")[0];
+    var bufferCanvas = $("#buffer")[0];
+
+    $("#output").height(Math.max(nSeqs, $(window).height()));
 
     cw = canvas.clientWidth;
     ch = canvas.clientHeight;

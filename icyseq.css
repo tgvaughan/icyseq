@@ -67,7 +67,7 @@ body {
 
 #help {
     display: none;
-    position: absolute;
+    position: fixed;
 
     z-index: 3;
     background-color: rgba(1,1,1,0.9);
