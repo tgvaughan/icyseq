@@ -34,6 +34,7 @@ var bufferWidttrueh;
 var coords = false;
 var snpView = false;
 var baseSeqIdx = 0;
+var SNPcount = 0;
 
 var mousex, mousey;
 
@@ -176,6 +177,8 @@ function drawCoords(x, y) {
 
     var site = getSiteFromX(x, $("#output").width());
     $("#site").text(site);
+
+    $("#snp").text(SNPcount);
 }
 
 function coordsHandler(event) {
@@ -228,6 +231,7 @@ function loadFile() {
     function fileLoaded(evt) {
         seqData = evt.target.result;
         parseSeqData();
+        countSNPs();
         hideDropTarget();
         update();
     }
@@ -323,10 +327,8 @@ function parseFASTA() {
     seqs[thishead] = thisseq.trim().toUpperCase();
 }
 
-// Convert parsed sequences into a nSeqs*maxSeqLen bitmap representing the
-// alignment.  This function doesn't actually draw this to the  screen
-// - that is handled by update().
-function drawAlignmentImage() {
+// Count SNPs
+function countSNPs() {
 
     // Record sequence count and maximum length
     nSeqs = Object.keys(seqs).length;
@@ -334,6 +336,30 @@ function drawAlignmentImage() {
     for (var key in seqs) {
         maxSeqLen = Math.max(maxSeqLen, seqs[key].length);
     }
+
+    SNPcount = 0;
+
+    baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
+    var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
+    var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
+
+    for (i=0; i<nSeqs; i++) {
+        key = Object.keys(seqs)[i];
+        seq = seqs[key];
+
+        for (site=0; site<maxSeqLen; site++) {
+
+            if ((seq[site] in colourScheme && baseSeq[site] in colourScheme)
+                    && seq[site] !== baseSeq[site])
+                SNPcount += 1;
+        }
+    }
+}
+
+// Convert parsed sequences into a nSeqs*maxSeqLen bitmap representing the
+// alignment.  This function doesn't actually draw this to the  screen
+// - that is handled by update().
+function drawAlignmentImage() {
 
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
