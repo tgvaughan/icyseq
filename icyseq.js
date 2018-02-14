@@ -31,7 +31,7 @@ var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
 var bufferWidttrueh;
-var coords = false;
+var coords = true;
 var snpView = false;
 var baseSeqIdx = 0;
 var SNPcount = 0;
