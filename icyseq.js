@@ -30,18 +30,20 @@ var seqs = {};
 var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
-var bufferWidttrueh;
 var coords = false;
 var snpView = false;
 var baseSeqIdx = 0;
 var SNPcount = 0;
+
+var zoomx = 1, zoomy = 1;
+var siteMin, siteMax, seqMin, seqMax;
 
 var mousex, mousey;
 
 // Colour schemes
 var csIdx = 0;
 var colourSchemes = {
-    "rainbow": {
+    rainbow: {
         "G": [255,0,0,255],
         "T": [0,255,0,255],
         "U": [0,255,0,255],
@@ -50,7 +52,7 @@ var colourSchemes = {
         "snp": [0, 255, 0, 255]
     },
 
-    "ice": {
+    ice: {
         "G": [0,0,255,255],
         "T": [100,100,255,255],
         "U": [100,100,255,255],
@@ -59,7 +61,7 @@ var colourSchemes = {
         "snp": [0, 255, 255, 255]
     },
 
-    "fire": {
+    fire: {
         "G": [255,0,0,255],
         "T": [255,100,0,255],
         "U": [255,100,0,255],
@@ -123,6 +125,9 @@ $(document).ready(function() {
     // Set up mouse click handler:
     $("#output").click(mouseClickHandler);
     displayDropTarget();
+
+    // Set up zoom event handler
+    $("#output").on("wheel", zoomHandler);
 
     // Event handlers to ensure coords never displayed when mouse has left window
     $("#output").on("mouseleave", function(event) {
@@ -267,9 +272,20 @@ function parseSeqData() {
         parseFASTA();
 
     else {
-        // Todo: produce error.
-        console.log("Error reading file.");
+        // Todo: produce user-interpretable error
+        throw "Error reading file.";
     }
+
+    // Record sequence count and maximum length
+    nSeqs = Object.keys(seqs).length;
+    maxSeqLen = 0;
+    for (var key in seqs) {
+        maxSeqLen = Math.max(maxSeqLen, seqs[key].length);
+    }
+
+    // Initialize view
+    minSeq = 0; maxSeq = nSeqs;
+    minSite = 0; maxSite = maxSeqLen;
 }
 
 // Parse NEXUS-formatted alignment file
@@ -349,12 +365,6 @@ function parseFASTA() {
 // Count SNPs
 function countSNPs() {
 
-    // Record sequence count and maximum length
-    nSeqs = Object.keys(seqs).length;
-    maxSeqLen = 0;
-    for (var key in seqs) {
-        maxSeqLen = Math.max(maxSeqLen, seqs[key].length);
-    }
 
     SNPcount = 0;
 
@@ -382,27 +392,26 @@ function drawAlignmentImage() {
 
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
-    bufferWidth = Math.min(maxSeqLen, $(window).width());
-
-    bufferCanvas.width = bufferWidth;
-    bufferCanvas.height = nSeqs;
+    bufferCanvas.width = maxSite-minSite;
+    bufferCanvas.height = maxSeq-minSeq;
     bufferCtx = bufferCanvas.getContext("2d");
 
-    var imageData =  bufferCtx.getImageData(0,0,bufferWidth,nSeqs);
+    var imageData =  bufferCtx.getImageData(0,0,maxSite-minSite,maxSeq-minSeq);
     var data =  imageData.data;
 
     var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
 
-    var i, j, k, seq, offset, site, col;
+    var i, j, k, seqIdx, seq, offset, site, col;
     if (!snpView) {
-        for (i=0; i<nSeqs; i++) {
-            key = Object.keys(seqs)[i];
+        for (i=0; i<maxSeq-minSeq; i++) {
+            seqIdx = i + minSeq;
+            key = Object.keys(seqs)[seqIdx];
             seq = seqs[key];
-            offset = i*bufferWidth*4;
+            offset = i*(maxSite-minSite)*4;
 
-            for (j=0; j<bufferWidth; j++) {
-                site = Math.floor(j*maxSeqLen/bufferWidth);
+            for (j=0; j<maxSite-minSite; j++) {
 
+                site = j + minSite;
                 if (site<seq.length && seq[site] in colourScheme)
                     col = colourScheme[seq[site]];
                 else
@@ -417,21 +426,17 @@ function drawAlignmentImage() {
         baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
         var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
 
-        for (i=0; i<nSeqs; i++) {
-            key = Object.keys(seqs)[i];
+        for (i=0; i<maxSeq-minSeq; i++) {
+            seqIdx = i + minSeq;
+            key = Object.keys(seqs)[seqIdx];
             seq = seqs[key];
-            offset = i*bufferWidth*4;
+            offset = i*(maxSite-minSite)*4;
 
-            for (j=0; j<bufferWidth; j++) {
-                var startSite = Math.floor(j*maxSeqLen/bufferWidth);
-                var endSite = Math.min(Math.floor((j+1)*maxSeqLen/bufferWidth), maxSeqLen);
+            for (j=0; j<(maxSite-minSite); j++) {
+                site = j + minSite;
 
-                var isSNP = false;
-                for (site=startSite; site<endSite; site++) {
-                    if ((seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
-                            seq[site] !== baseSeq[site])
-                        isSNP = true;
-                }
+                var isSNP = (seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
+                    seq[site] !== baseSeq[site];
 
                 if (isSNP)
                     col = colourScheme.snp;
@@ -444,6 +449,7 @@ function drawAlignmentImage() {
             }
         }
     }
+
     bufferCtx.putImageData(imageData, 0, 0);
 }
 
@@ -458,7 +464,7 @@ function update() {
     var canvas = $("#output")[0];
     var bufferCanvas = $("#buffer")[0];
 
-    $("#output").height(Math.max(nSeqs, $(window).height()));
+    $("#output").height($(window).height());
 
     cw = canvas.clientWidth;
     ch = canvas.clientHeight;
@@ -466,10 +472,9 @@ function update() {
     canvas.height = ch;
 
     var ctx = canvas.getContext("2d");
-    ctx.scale(canvas.width/bufferWidth, canvas.height/nSeqs);
+    ctx.scale(canvas.width/(maxSite-minSite), canvas.height/(maxSeq-minSeq));
 
     ctx.imageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
 
@@ -531,4 +536,25 @@ function mouseClickHandler(event) {
     update();
 
     event.preventDefault();
+}
+
+// Zoom event handler
+function zoomHandler(event) {
+
+    var zoomIn = event.originalEvent.deltaY < 0;
+    
+    if (zoomIn) {
+        zoomx *= 1.1;
+        zoomy *= 1.1;
+    } else {
+        zoomx /= 1.1;
+        zoomy /= 1.1;
+    }
+
+    zoomx = Math.max(zoomx, 1)
+    zoomy = Math.max(zoomy, 1)
+
+    console.log(zoomx);
+
+    update();
 }
