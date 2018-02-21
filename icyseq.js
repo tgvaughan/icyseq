@@ -172,13 +172,12 @@ function displayNotification(str) {
     $("#notify").fadeOut(1000);
 }
 
-function getSeqFromY(y, maxY) {
-    seqIdx = Math.floor(nSeqs*y/maxY);
-    return (seqIdx+1) + " of " + nSeqs + " (" + Object.keys(seqs)[seqIdx] + ")";
+function getSeqIdxFromY(y, maxY) {
+    return Math.floor((maxSeq-minSeq)*y/maxY) + minSeq;
 }
 
-function getSiteFromX(x, maxX) {
-    return (Math.floor(maxSeqLen*x/maxX)+1) + " of " + maxSeqLen;
+function getSiteIdxFromX(x, maxX) {
+    return Math.floor((maxSite-minSite)*x/maxX)+minSite;
 }
 
 function drawCoords(x, y) {
@@ -196,11 +195,13 @@ function drawCoords(x, y) {
     else
         $("#cursorCoords").css("top", y + offset);
 
-    var seq = getSeqFromY(y, $("#output").height());
-    $("#seq").text(seq);
+    var seqIdx = getSeqIdxFromY(y, $("#output").height());
+    var seqText = (seqIdx+1) + " of " + nSeqs + " (" + Object.keys(seqs)[seqIdx] + ")";
+    $("#seq").text(seqText);
 
-    var site = getSiteFromX(x, $("#output").width());
-    $("#site").text(site);
+    var siteIdx = getSiteIdxFromX(x, $("#output").width());
+    var siteText = (siteIdx+1) + " of " + maxSeqLen;
+    $("#site").text(siteText);
 
     $("#snp").text(SNPcount);
 }
@@ -541,7 +542,9 @@ function mouseClickHandler(event) {
 // Zoom event handler
 function zoomHandler(event) {
 
-    var zoomIn = event.originalEvent.deltaY < 0;
+    var oe = event.originalEvent;
+
+    var zoomIn = oe.deltaY < 0;
     
     if (zoomIn) {
         zoomx *= 1.1;
@@ -554,7 +557,17 @@ function zoomHandler(event) {
     zoomx = Math.max(zoomx, 1)
     zoomy = Math.max(zoomy, 1)
 
-    console.log(zoomx);
+    var cSite = getSiteIdxFromX(oe.clientX, $("output").width());
+    var cSeq = getSeqIdxFromY(oe.clientY, $("output").height());
+    console.log(cSite);
+
+    var newSiteMin = Math.floor(cSite - (cSite - siteMin)*zoomx);
+    var newSiteMax = Math.floor(newSiteMin + (siteMax - siteMin)/zoomx);
+
+
+    siteMin = Math.max(0, newSiteMin);
+    siteMax = Math.min(maxSeqLen, newSiteMax);
+    
 
     update();
 }
