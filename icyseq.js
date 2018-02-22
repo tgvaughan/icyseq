@@ -126,6 +126,9 @@ $(document).ready(function() {
 
     displayDropTarget();
 
+    // Set up pan event handler
+    $("#output").on("mousemove", panHandler);
+
     // Set up zoom event handler
     $("#output").on("wheel", zoomHandler);
 
@@ -561,7 +564,45 @@ function keyPressHandler(event) {
     }
 }
 
+var panOrigin;
+var oldViewMinX, oldViewMaxX, oldViewMinY, oldViewMaxY;
+
+function zeroPanOrigin(x,y) {
+        panOrigin = [x, y];
+        oldViewMinX = viewMinX; oldViewMaxX = viewMaxX;
+        oldViewMinY = viewMinY; oldViewMaxY = viewMaxY;
+}
+
 // Pan event handler
+function panHandler(event) {
+
+    var oe = event.originalEvent;
+    var b;
+    if (oe.buttons !== undefined)
+        b = oe.buttons;
+    else
+        b = oe.which;
+
+    console.log(b);
+
+    if (b === 0) {
+        zeroPanOrigin(oe.layerX, oe.layerY);
+        
+        return false;
+    }
+
+    event.preventDefault();
+
+    var dX = (oe.layerX - panOrigin[0])/$("#output").width()*(viewMaxX - viewMinX);
+    var dY = (oe.layerY - panOrigin[1])/$("#output").height()*(viewMaxY - viewMinY);
+
+    viewMinX = Math.max(Math.min(oldViewMinX - dX, 1), 0);
+    viewMaxX = Math.max(Math.min(oldViewMaxX - dX, 1), 0);
+    viewMinY = Math.max(Math.min(oldViewMinY - dY, 1), 0);
+    viewMaxY = Math.max(Math.min(oldViewMaxY - dY, 1), 0);
+
+    update();
+}
 
 
 // Zoom event handler
@@ -607,6 +648,8 @@ function zoomHandler(event) {
         viewMaxX = newViewMaxX;
         viewMinY = newViewMinY;
         viewMaxY = newViewMaxY;
+
+        zeroPanOrigin(oe.clientX, oe.clientY);
 
         update();
     }
