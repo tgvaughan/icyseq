@@ -27,17 +27,20 @@
 var seqFile;
 var seqData = "";
 var seqs = {};
+var consensusSeq;
 var nSeqs;
 var maxSeqLen;
 var bufferCanvas;
 var coords = false;
 var snpView = false;
-var baseSeqIdx = 0;
-var SNPcount = 0;
+var PScount = 0;
 
 var viewMinX = 0, viewMaxX = 1, viewMinY = 0, viewMaxY = 1;
 
 var mousex, mousey;
+
+// Alphabet
+var alphabet = "GTUCA";
 
 // Colour schemes
 var csIdx = 0;
@@ -121,8 +124,6 @@ $(document).ready(function() {
     // Set up keyboard handler:
     $(window).on("keypress", keyPressHandler);
 
-    // Set up mouse click handler:
-    $("#output").click(mouseClickHandler);
     displayDropTarget();
 
     // Set up zoom event handler
@@ -202,7 +203,7 @@ function drawCoords(x, y) {
     var siteText = (siteIdx+1) + " of " + maxSeqLen;
     $("#site").text(siteText);
 
-    $("#snp").text(SNPcount);
+    $("#polycount").text(PScount);
 }
 
 function coordsHandler(event) {
@@ -365,23 +366,48 @@ function parseFASTA() {
 // Count SNPs
 function countSNPs() {
 
+    PScount = 0;
 
-    SNPcount = 0;
+    var site, seqIdx, i, charHist = [];
+    var seqNames = Object.keys(seqs);
 
-    baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
-    var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
-    var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
+    consensusSeq = [];
+    for (site=0; site<maxSeqLen; site++) {
 
-    for (i=0; i<nSeqs; i++) {
-        key = Object.keys(seqs)[i];
-        seq = seqs[key];
+        // Compute character histogram
 
-        for (site=0; site<maxSeqLen; site++) {
+        for (i=0; i<alphabet.length; i++)
+            charHist[i] = 0;
 
-            if ((seq[site] in colourScheme && baseSeq[site] in colourScheme)
-                    && seq[site] !== baseSeq[site])
-                SNPcount += 1;
+        var thisChar;
+        for (seqIdx=0; seqIdx<nSeqs; seqIdx++) {
+            thisChar = seqs[seqNames[seqIdx]][site];
+            var charIdx = alphabet.indexOf(thisChar);
+            if (charIdx>=0)
+                charHist[charIdx] += 1;
         }
+
+        // Find consensus character
+
+        var consensusChar = undefined;
+        var consensusCharScore = 0;
+        var isSNP = false;
+
+        for (i=0; i<charHist.length; i++) {
+            if (charHist[i] > consensusCharScore) {
+                if (!isSNP && consensusCharScore>0)
+                    isSNP = true;
+                consensusChar = alphabet[i];
+                consensusCharScore = charHist[i];
+            }
+        }
+
+        // Add consensus character to consensus sequence
+
+        consensusSeq[site] = consensusChar;
+
+        if (isSNP)
+            PScount += 1;
     }
 }
 
@@ -389,8 +415,6 @@ function countSNPs() {
 // alignment.  This function doesn't actually draw this to the  screen
 // - that is handled by update().
 function drawAlignmentImage() {
-
-    console.log(minSite + " " + maxSite + " starting...");
 
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
@@ -405,6 +429,7 @@ function drawAlignmentImage() {
 
     var i, j, k, seqIdx, seq, offset, site, col;
     if (!snpView) {
+
         for (i=0; i<bufferCanvas.height; i++) {
             seqIdx = Math.floor((i/bufferCanvas.height*(viewMaxY-viewMinY) + viewMinY)*nSeqs);
             key = Object.keys(seqs)[seqIdx];
@@ -424,9 +449,8 @@ function drawAlignmentImage() {
                 }
             }
         }
+
     } else {
-        baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
-        var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
 
         for (i=0; i<bufferCanvas.height; i++) {
             seqIdx = Math.floor((i/bufferCanvas.height*(viewMaxY-viewMinY) + viewMinY)*nSeqs);
@@ -440,8 +464,8 @@ function drawAlignmentImage() {
 
                 var isSNP = false;
                 for (site = siteMin; site<siteMax; site++) {
-                    if ((seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
-                        seq[site] !== baseSeq[site])
+                    if ((seq[site] in colourScheme && consensusSeq[site] in colourScheme) &&
+                        seq[site] !== consensusSeq[site])
                         isSNP = true;
                 }
 
@@ -458,8 +482,6 @@ function drawAlignmentImage() {
     }
 
     bufferCtx.putImageData(imageData, 0, 0);
-
-    console.log(minSite + " " + maxSite + " done");
 }
 
 // Update canvas
@@ -539,20 +561,8 @@ function keyPressHandler(event) {
     }
 }
 
-// Mouse click event handler
-function mouseClickHandler(event) {
+// Pan event handler
 
-    if (seqData.length === 0)
-        return;
-
-    // Set base sequence for SNP view:
-    var oe = event.originalEvent;
-    baseSeqIdx = Math.floor(nSeqs*oe.clientY/$(window).height());
-
-    update();
-
-    event.preventDefault();
-}
 
 // Zoom event handler
 function zoomHandler(event) {
@@ -590,7 +600,6 @@ function zoomHandler(event) {
         || !Number.isFinite(newViewMinY) || !Number.isFinite(newViewMaxY)
         || newViewMaxX == newViewMinX || newViewMaxY == newViewMinY)
         return;
-
 
     if (newViewMinX != viewMinX || newViewMaxX != viewMaxX
        || newViewMinY != viewMinY || newViewMaxY != viewMaxY) {
