@@ -596,6 +596,11 @@ function panHandler(event) {
     var dX = (oe.layerX - panOrigin[0])/$("#output").width()*(viewMaxX - viewMinX);
     var dY = (oe.layerY - panOrigin[1])/$("#output").height()*(viewMaxY - viewMinY);
 
+    dX = Math.min(dX, oldViewMinX);
+    dX = Math.max(dX, oldViewMaxX-1);
+    dY = Math.min(dY, oldViewMinY);
+    dY = Math.max(dY, oldViewMaxY-1);
+
     viewMinX = Math.max(Math.min(oldViewMinX - dX, 1), 0);
     viewMaxX = Math.max(Math.min(oldViewMaxX - dX, 1), 0);
     viewMinY = Math.max(Math.min(oldViewMinY - dY, 1), 0);
