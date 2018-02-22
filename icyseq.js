@@ -35,8 +35,7 @@ var snpView = false;
 var baseSeqIdx = 0;
 var SNPcount = 0;
 
-var zoomx = 1, zoomy = 1;
-var siteMin, siteMax, seqMin, seqMax;
+var viewMinX = 0, viewMaxX = 1, viewMinY = 0, viewMaxY = 1;
 
 var mousex, mousey;
 
@@ -173,11 +172,11 @@ function displayNotification(str) {
 }
 
 function getSeqIdxFromY(y, maxY) {
-    return Math.floor((maxSeq-minSeq)*y/maxY) + minSeq;
+    return Math.floor(((viewMaxY-viewMinY)*y/maxY + viewMinY)*nSeqs);
 }
 
 function getSiteIdxFromX(x, maxX) {
-    return Math.floor((maxSite-minSite)*x/maxX)+minSite;
+    return Math.floor(((viewMaxX-viewMinX)*x/maxX + viewMinX)*maxSeqLen);
 }
 
 function drawCoords(x, y) {
@@ -391,28 +390,30 @@ function countSNPs() {
 // - that is handled by update().
 function drawAlignmentImage() {
 
+    console.log(minSite + " " + maxSite + " starting...");
+
     // Paint alignment to off-screen canvas
     var bufferCanvas = document.getElementById("buffer");
-    bufferCanvas.width = maxSite-minSite;
-    bufferCanvas.height = maxSeq-minSeq;
+    bufferCanvas.width = $("#output").width();
+    bufferCanvas.height = $("#output").height();
     bufferCtx = bufferCanvas.getContext("2d");
 
-    var imageData =  bufferCtx.getImageData(0,0,maxSite-minSite,maxSeq-minSeq);
+    var imageData =  bufferCtx.getImageData(0,0,bufferCanvas.width,bufferCanvas.height);
     var data =  imageData.data;
 
     var colourScheme = colourSchemes[Object.keys(colourSchemes)[csIdx]];
 
     var i, j, k, seqIdx, seq, offset, site, col;
     if (!snpView) {
-        for (i=0; i<maxSeq-minSeq; i++) {
-            seqIdx = i + minSeq;
+        for (i=0; i<bufferCanvas.height; i++) {
+            seqIdx = Math.floor((i/bufferCanvas.height*(viewMaxY-viewMinY) + viewMinY)*nSeqs);
             key = Object.keys(seqs)[seqIdx];
             seq = seqs[key];
-            offset = i*(maxSite-minSite)*4;
+            offset = i*bufferCanvas.width*4;
 
-            for (j=0; j<maxSite-minSite; j++) {
+            for (j=0; j<bufferCanvas.width; j++) {
+                site = Math.floor((j/bufferCanvas.width*(viewMaxX - viewMinX) + viewMinX)*maxSeqLen);
 
-                site = j + minSite;
                 if (site<seq.length && seq[site] in colourScheme)
                     col = colourScheme[seq[site]];
                 else
@@ -427,17 +428,22 @@ function drawAlignmentImage() {
         baseSeqIdx = Math.min(baseSeqIdx, nSeqs-1);
         var baseSeq = seqs[Object.keys(seqs)[baseSeqIdx]];
 
-        for (i=0; i<maxSeq-minSeq; i++) {
-            seqIdx = i + minSeq;
+        for (i=0; i<bufferCanvas.height; i++) {
+            seqIdx = Math.floor((i/bufferCanvas.height*(viewMaxY-viewMinY) + viewMinY)*nSeqs);
             key = Object.keys(seqs)[seqIdx];
             seq = seqs[key];
-            offset = i*(maxSite-minSite)*4;
+            offset = i*bufferCanvas.width*4;
 
-            for (j=0; j<(maxSite-minSite); j++) {
-                site = j + minSite;
+            for (j=0; j<bufferCanvas.width; j++) {
+                siteMin = Math.floor((j/bufferCanvas.width*(viewMaxX - viewMinX) + viewMinX)*maxSeqLen);
+                siteMax = Math.floor(((j+1)/bufferCanvas.width*(viewMaxX - viewMinX) + viewMinX)*maxSeqLen);
 
-                var isSNP = (seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
-                    seq[site] !== baseSeq[site];
+                var isSNP = false;
+                for (site = siteMin; site<siteMax; site++) {
+                    if ((seq[site] in colourScheme && baseSeq[site] in colourScheme) &&
+                        seq[site] !== baseSeq[site])
+                        isSNP = true;
+                }
 
                 if (isSNP)
                     col = colourScheme.snp;
@@ -452,6 +458,8 @@ function drawAlignmentImage() {
     }
 
     bufferCtx.putImageData(imageData, 0, 0);
+
+    console.log(minSite + " " + maxSite + " done");
 }
 
 // Update canvas
@@ -466,6 +474,7 @@ function update() {
     var bufferCanvas = $("#buffer")[0];
 
     $("#output").height($(window).height());
+    $("#output").width($(window).width());
 
     cw = canvas.clientWidth;
     ch = canvas.clientHeight;
@@ -473,8 +482,6 @@ function update() {
     canvas.height = ch;
 
     var ctx = canvas.getContext("2d");
-    ctx.scale(canvas.width/(maxSite-minSite), canvas.height/(maxSeq-minSeq));
-
     ctx.imageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
@@ -511,17 +518,25 @@ function keyPressHandler(event) {
 
     // Commands which work only when sequences loaded:
     switch (eventChar) {
-        case "x":
-            toggleCoords();
-            return;
-        case "c":
-            cycleColourScheme();
-            return;
-        case "s":
-            toggleSNPView();
-            return;
-    }
+    case "x":
+        toggleCoords();
+        break;
 
+    case "c":
+        cycleColourScheme();
+        break;
+
+    case "s":
+        toggleSNPView();
+        break;
+
+    case "z":
+        viewMinX = 0; viewMaxX = 1;
+        viewMinY = 0; viewMaxY = 1;
+        
+        update();
+        break;
+    }
 }
 
 // Mouse click event handler
@@ -545,29 +560,45 @@ function zoomHandler(event) {
     var oe = event.originalEvent;
 
     var zoomIn = oe.deltaY < 0;
+
+    var zoomx = 1/(viewMaxX - viewMinX);
+    var zoomy = 1/(viewMaxY - viewMinY);
+    var zoomxP, zoomyP;
     
     if (zoomIn) {
-        zoomx *= 1.1;
-        zoomy *= 1.1;
+        zoomxP = zoomx*1.2;
+        zoomyP = zoomy*1.2;
     } else {
-        zoomx /= 1.1;
-        zoomy /= 1.1;
+        zoomxP = zoomx/1.2;
+        zoomyP = zoomy/1.2;
     }
 
-    zoomx = Math.max(zoomx, 1)
-    zoomy = Math.max(zoomy, 1)
+    var refX = oe.clientX/$("#output").width()*(viewMaxX - viewMinX) + viewMinX;
+    var refY = oe.clientY/$("#output").height()*(viewMaxY - viewMinY) + viewMinY;
 
-    var cSite = getSiteIdxFromX(oe.clientX, $("output").width());
-    var cSeq = getSeqIdxFromY(oe.clientY, $("output").height());
-    console.log(cSite);
+    var newViewMinX = refX + (viewMinX - refX)*zoomx/zoomxP;
+    var newViewMaxX = newViewMinX + (viewMaxX - viewMinX)*zoomx/zoomxP;
+    newViewMinX = Math.min(Math.max(newViewMinX, 0), 1);
+    newViewMaxX = Math.min(Math.max(newViewMaxX, 0), 1);
 
-    var newSiteMin = Math.floor(cSite - (cSite - siteMin)*zoomx);
-    var newSiteMax = Math.floor(newSiteMin + (siteMax - siteMin)/zoomx);
+    var newViewMinY = refY + (viewMinY - refY)*zoomy/zoomyP;
+    var newViewMaxY = newViewMinY + (viewMaxY - viewMinY)*zoomy/zoomyP;
+    newViewMinY = Math.min(Math.max(newViewMinY, 0), 1);
+    newViewMaxY = Math.min(Math.max(newViewMaxY, 0), 1);
+
+    if (!Number.isFinite(newViewMinX) || !Number.isFinite(newViewMaxX)
+        || !Number.isFinite(newViewMinY) || !Number.isFinite(newViewMaxY)
+        || newViewMaxX == newViewMinX || newViewMaxY == newViewMinY)
+        return;
 
 
-    siteMin = Math.max(0, newSiteMin);
-    siteMax = Math.min(maxSeqLen, newSiteMax);
-    
+    if (newViewMinX != viewMinX || newViewMaxX != viewMaxX
+       || newViewMinY != viewMinY || newViewMaxY != viewMaxY) {
+        viewMinX = newViewMinX;
+        viewMaxX = newViewMaxX;
+        viewMinY = newViewMinY;
+        viewMaxY = newViewMaxY;
 
-    update();
+        update();
+    }
 }
