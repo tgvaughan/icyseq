@@ -27,13 +27,13 @@
 var seqFile;
 var seqData = "";
 var seqs = {};
-var consensusSeq;
 var nSeqs;
 var maxSeqLen;
-var bufferCanvas;
 var coords = false;
 var snpView = false;
+
 var PScount = 0;
+var consensusSeq;
 
 var viewMinX = 0, viewMaxX = 1, viewMinY = 0, viewMaxY = 1;
 
