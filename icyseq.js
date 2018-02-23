@@ -616,8 +616,8 @@ function zoomHandler(event) {
     var oe = event.originalEvent;
 
     var zoomIn = oe.deltaX < 0 || oe.deltaY < 0;
-    var horizOnly = oe.ctrlKey;
-    var vertOnly = oe.shiftKey;
+    var horizOnly = oe.shiftKey;
+    var vertOnly = oe.ctrlKey;
 
     var zoomFactor = zoomIn ? 1.2 : 1.0/1.2;
 
