@@ -576,20 +576,16 @@ function zeroPanOrigin(x,y) {
 // Pan event handler
 function panHandler(event) {
 
-    var oe = event.originalEvent;
-    var b;
-    if (oe.buttons !== undefined)
-        b = oe.buttons;
-    else
-        b = oe.which;
+    event.preventDefault();
 
+    var oe = event.originalEvent;
+
+    var b = oe.buttons !== undefined ? oe.buttons : oe.which;
     if (b === 0) {
         zeroPanOrigin(oe.layerX, oe.layerY);
         
         return false;
     }
-
-    event.preventDefault();
 
     var dX = (oe.layerX - panOrigin[0])/$("#output").width()*(viewMaxX - viewMinX);
     var dY = (oe.layerY - panOrigin[1])/$("#output").height()*(viewMaxY - viewMinY);
@@ -611,32 +607,39 @@ function panHandler(event) {
 // Zoom event handler
 function zoomHandler(event) {
 
+    event.preventDefault();
+
     var oe = event.originalEvent;
 
-    var zoomIn = oe.deltaY < 0;
+    var zoomIn = oe.deltaX < 0 || oe.deltaY < 0;
+    var horizOnly = oe.ctrlKey;
+    var vertOnly = oe.shiftKey;
 
-    var zoomx = 1/(viewMaxX - viewMinX);
-    var zoomy = 1/(viewMaxY - viewMinY);
-    var zoomxP, zoomyP;
-    
-    if (zoomIn) {
-        zoomxP = zoomx*1.2;
-        zoomyP = zoomy*1.2;
-    } else {
-        zoomxP = zoomx/1.2;
-        zoomyP = zoomy/1.2;
-    }
+    var zoomFactor = zoomIn ? 1.2 : 1.0/1.2;
+
+    var zoomX = 1/(viewMaxX - viewMinX);
+    var zoomY = 1/(viewMaxY - viewMinY);
+    var zoomXP = zoomX, zoomYP = zoomY;
+
+    if (!vertOnly)
+        zoomXP *= zoomFactor;
+
+    if (!horizOnly)
+        zoomYP *= zoomFactor;
+
+    if (zoomXP == zoomX && zoomYP == zoomY)
+        return;
 
     var refX = oe.clientX/$("#output").width()*(viewMaxX - viewMinX) + viewMinX;
     var refY = oe.clientY/$("#output").height()*(viewMaxY - viewMinY) + viewMinY;
 
-    var newViewMinX = refX + (viewMinX - refX)*zoomx/zoomxP;
-    var newViewMaxX = newViewMinX + (viewMaxX - viewMinX)*zoomx/zoomxP;
+    var newViewMinX = refX + (viewMinX - refX)*zoomX/zoomXP;
+    var newViewMaxX = newViewMinX + (viewMaxX - viewMinX)*zoomX/zoomXP;
     newViewMinX = Math.min(Math.max(newViewMinX, 0), 1);
     newViewMaxX = Math.min(Math.max(newViewMaxX, 0), 1);
 
-    var newViewMinY = refY + (viewMinY - refY)*zoomy/zoomyP;
-    var newViewMaxY = newViewMinY + (viewMaxY - viewMinY)*zoomy/zoomyP;
+    var newViewMinY = refY + (viewMinY - refY)*zoomY/zoomYP;
+    var newViewMaxY = newViewMinY + (viewMaxY - viewMinY)*zoomY/zoomYP;
     newViewMinY = Math.min(Math.max(newViewMinY, 0), 1);
     newViewMaxY = Math.min(Math.max(newViewMaxY, 0), 1);
 
