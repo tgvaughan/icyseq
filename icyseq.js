@@ -583,8 +583,6 @@ function panHandler(event) {
     else
         b = oe.which;
 
-    console.log(b);
-
     if (b === 0) {
         zeroPanOrigin(oe.layerX, oe.layerY);
         
