@@ -462,14 +462,18 @@ function drawAlignmentImage() {
             offset = i*bufferCanvas.width*4;
 
             for (j=0; j<bufferCanvas.width; j++) {
-                siteMin = Math.floor((j/bufferCanvas.width*(viewMaxX - viewMinX) + viewMinX)*maxSeqLen);
-                siteMax = Math.floor(((j+1)/bufferCanvas.width*(viewMaxX - viewMinX) + viewMinX)*maxSeqLen);
+                var siteMin = Math.floor((j/bufferCanvas.width*(viewMaxX - viewMinX)
+                                          + viewMinX)*maxSeqLen);
+                var siteMax = Math.floor(((j+1)/bufferCanvas.width*(viewMaxX - viewMinX)
+                                          + viewMinX)*maxSeqLen);
 
                 var isSNP = false;
-                for (site = siteMin; site<siteMax; site++) {
+                for (site = siteMin; site<=siteMax; site++) {
                     if ((seq[site] in colourScheme && consensusSeq[site] in colourScheme) &&
-                        seq[site] !== consensusSeq[site])
+                        seq[site] !== consensusSeq[site]) {
                         isSNP = true;
+                        break;
+                    }
                 }
 
                 if (isSNP)
